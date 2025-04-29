@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoring PJR & ITT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#10b981',
+                        dark: '#1e293b',
+                        light: '#f8fafc'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+        }
+        
+        .file-input-label {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+            border: 2px dashed #d1d5db;
+            border-radius: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: white;
+        }
+        
+        .file-input-label:hover {
+            border-color: #3b82f6;
+            background-color: #f8fafc;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .file-input-label i {
+            font-size: 2rem;
+            color: #9ca3af;
+            margin-bottom: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .file-input-label span {
+            color: #6b7280;
+            transition: all 0.3s ease;
+        }
+        
+        .file-input-label:hover i, .file-input-label:hover span {
+            color: #3b82f6;
+        }
+        
+        .preview-image {
+            max-width: 100%;
+            max-height: 200px;
+            margin-top: 1rem;
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .loading {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3b82f6;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .card {
+            border-radius: 1rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            background: white;
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .radio-option {
+            display: flex;
+            align-items: center;
+            padding: 0.75rem;
+            border-radius: 0.5rem;
+            background-color: #f8fafc;
+            transition: all 0.2s ease;
+        }
+        
+        .radio-option:hover {
+            background-color: #e0f2fe;
+            transform: translateX(2px);
+        }
+        
+        .radio-option input:checked ~ span {
+            color: #3b82f6;
+            font-weight: 600;
+        }
+        
+        .header-gradient {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+        }
+        
+        .submit-btn {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+            color: white;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(59, 130, 246, 0.3);
+        }
+        
+        .input-field {
+            transition: all 0.3s ease;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .input-field:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+    </div>
+
+    <div class="container mx-auto px-4 py-8 max-w-3xl">
+        <div class="card overflow-hidden p-0">
+            <div class="header-gradient px-6 py-4 text-center">
+                <h1 class="text-2xl md:text-3xl font-bold">
+                    <i class="fas fa-clipboard-check mr-2"></i> Monitoring PJR & ITT
+                </h1>
+                <p class="text-blue-100 mt-1">Monitoring Penanggung Jawab Rak Dan Item Tidak Terdisplay</p>
+            </div>
+            
+            <div class="p-6">
+                <form id="rackForm" class="space-y-6">
+                    <!-- Date Input -->
+                    <div>
+                        <label for="date" class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                            <i class="fas fa-calendar-day mr-2 text-primary"></i> Tanggal
+                        </label>
+                        <input type="date" id="date" name="date" required
+                            class="input-field w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary">
+                    </div>
+
+                    <!-- Person Select -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                            <i class="fas fa-users mr-2 text-primary"></i> Personil Yang Mengisi
+                        </label>
+                        <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
+                            <label class="radio-option">
+                                <input type="radio" name="person" value="zidan" class="h-4 w-4 text-primary" required>
+                                <span class="ml-2">Zidan</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="person" value="naya" class="h-4 w-4 text-primary">
+                                <span class="ml-2">Naya</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="person" value="irdam" class="h-4 w-4 text-primary">
+                                <span class="ml-2">Irdam</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="person" value="fitri" class="h-4 w-4 text-primary">
+                                <span class="ml-2">Fitri</span>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="person" value="hafiz" class="h-4 w-4 text-primary">
+                                <span class="ml-2">Hafiz</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Rack Name -->
+                    <div>
+                        <label for="rackName" class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                            <i class="fas fa-warehouse mr-2 text-primary"></i> Nama Rak
+                        </label>
+                        <p class="text-gray-500 text-xs mb-2">*Isi Dengan Nama rak, Contoh: BFD1, PCE5, SNB10</p>
+                        <input type="text" id="rackName" name="rackName" required
+                            class="input-field w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-primary focus:border-primary"
+                            placeholder="Masukkan nama rak">
+                    </div>
+
+                    <!-- Rack Photo -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                            <i class="fas fa-camera mr-2 text-primary"></i> Unggah Foto ITT
+                        </label>
+                        <input type="file" id="rackPhoto" name="rackPhoto" accept="image/*" class="hidden" required>
+                        <label for="rackPhoto" class="file-input-label">
+                            <i class="fas fa-image"></i>
+                            <span>Klik untuk mengunggah foto ITT</span>
+                            <img id="rackPhotoPreview" class="preview-image hidden">
+                        </label>
+                    </div>
+
+                    <!-- Person Photo -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2 flex items-center">
+                            <i class="fas fa-user-circle mr-2 text-primary"></i> Unggah Foto PJR
+                        </label>
+                        <input type="file" id="personPhoto" name="personPhoto" accept="image/*" class="hidden" required>
+                        <label for="personPhoto" class="file-input-label">
+                            <i class="fas fa-user"></i>
+                            <span>Klik untuk mengunggah foto PJR</span>
+                            <img id="personPhotoPreview" class="preview-image hidden">
+                        </label>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <div class="pt-4">
+                        <button type="submit" id="submitBtn"
+                            class="submit-btn w-full font-bold py-3 px-4 rounded-lg transition duration-200 ease-in-out">
+                            <i class="fas fa-paper-plane mr-2"></i> Kirim PJR & ITT
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="mt-6 text-center text-gray-500 text-sm">
+            <p>© 2023 Monitoring System. Dibuat dengan <i class="fas fa-heart text-red-500"></i> oleh Tim IT</p>
+        </div>
+    </div>
+
+    <script>
+        // Telegram Bot API configuration
+        const TELEGRAM_BOT_TOKEN = '6585433248:AAEtM3aBSa10NPd8CbDSok64iuTVNKmM_gw';
+        const TELEGRAM_CHAT_ID = '-4770215506';
+
+        // Preview image before upload
+        document.getElementById('rackPhoto').addEventListener('change', function(e) {
+            const preview = document.getElementById('rackPhotoPreview');
+            const file = e.target.files[0];
+            
+            if (file) {
+                const reader = new FileReader();
+                
+                reader.onload = function(event) {
+                    preview.src = event.target.result;
+                    preview.classList.remove('hidden');
+                }
+                
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('personPhoto').addEventListener('change', function(e) {
+            const preview = document.getElementById('personPhotoPreview');
+            const file = e.target.files[0];
+            
+            if (file) {
+                const reader = new FileReader();
+                
+                reader.onload = function(event) {
+                    preview.src = event.target.result;
+                    preview.classList.remove('hidden');
+                }
+                
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // Set today's date as default
+        document.addEventListener('DOMContentLoaded', function() {
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('date').value = today;
+        });
+
+        // Function to send message to Telegram
+        async function sendToTelegram(message, photoFile = null) {
+            const formData = new FormData();
+            formData.append('chat_id', TELEGRAM_CHAT_ID);
+            formData.append('parse_mode', 'HTML');
+            
+            if (photoFile) {
+                formData.append('photo', photoFile);
+                formData.append('caption', message);
+            } else {
+                formData.append('text', message);
+            }
+
+            try {
+                const endpoint = photoFile ? 'sendPhoto' : 'sendMessage';
+                const response = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/${endpoint}`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                return data.ok;
+            } catch (error) {
+                console.error('Error sending to Telegram:', error);
+                return false;
+            }
+        }
+
+        // Form submission
+        document.getElementById('rackForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Show loading indicator
+            document.getElementById('loading').style.display = 'flex';
+            document.getElementById('submitBtn').disabled = true;
+
+            // Get form values
+            const date = document.getElementById('date').value;
+            const person = document.querySelector('input[name="person"]:checked').value;
+            const rackName = document.getElementById('rackName').value;
+            const rackPhotoFile = document.getElementById('rackPhoto').files[0];
+            const personPhotoFile = document.getElementById('personPhoto').files[0];
+
+            // Format message with HTML formatting for better Telegram display
+            const message = `
+<b>📋 MONITORING PJR & ITT</b>
+━━━━━━━━━━━━━━━━━━
+<b>📅 Tanggal:</b> <code>${date}</code>
+<b>👤 Personil:</b> <code>${person.toUpperCase()}</code>
+<b>📦 Nama Rak:</b> <code>${rackName.toUpperCase()}</code>
+━━━━━━━━━━━━━━━━━━
+<i>Dikirim via Monitoring System</i>
+            `;
+
+            try {
+                // Send rack photo with caption first
+                if (rackPhotoFile) {
+                    const rackPhotoSent = await sendToTelegram(message, rackPhotoFile);
+                    if (!rackPhotoSent) {
+                        throw new Error('Gagal mengirim foto rak dengan keterangan');
+                    }
+                } else {
+                    // If no rack photo, send the message alone
+                    const textSent = await sendToTelegram(message);
+                    if (!textSent) {
+                        throw new Error('Gagal mengirim pesan teks');
+                    }
+                }
+
+                // Send person photo separately with a simple caption
+                if (personPhotoFile) {
+                    const personCaption = `
+<b>👤 ${person.toUpperCase()} - PENANGGUNG JAWAB RAK</b>
+━━━━━━━━━━━━━━━━━━
+<b>📅 Tanggal:</b> <code>${date}</code>
+<b>📦 Rak:</b> <code>${rackName.toUpperCase()}</code>
+                    `;
+                    const personPhotoSent = await sendToTelegram(personCaption, personPhotoFile);
+                    if (!personPhotoSent) {
+                        console.warn('Gagal mengirim foto personil');
+                    }
+                }
+
+                // Show success notification
+                const submitBtn = document.getElementById('submitBtn');
+                submitBtn.innerHTML = '<i class="fas fa-check-circle mr-2"></i> Berhasil Dikirim!';
+                submitBtn.classList.remove('bg-primary');
+                submitBtn.classList.add('bg-green-500');
+                
+                setTimeout(() => {
+                    submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Kirim PJR & ITT';
+                    submitBtn.classList.remove('bg-green-500');
+                    submitBtn.classList.add('bg-primary');
+                }, 3000);
+                
+                // Reset form
+                this.reset();
+                document.getElementById('rackPhotoPreview').classList.add('hidden');
+                document.getElementById('personPhotoPreview').classList.add('hidden');
+            } catch (error) {
+                console.error('Submission error:', error);
+                
+                // Show error notification
+                const submitBtn = document.getElementById('submitBtn');
+                submitBtn.innerHTML = '<i class="fas fa-exclamation-circle mr-2"></i> Gagal Mengirim';
+                submitBtn.classList.remove('bg-primary');
+                submitBtn.classList.add('bg-red-500');
+                
+                setTimeout(() => {
+                    submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> Kirim PJR & ITT';
+                    submitBtn.classList.remove('bg-red-500');
+                    submitBtn.classList.add('bg-primary');
+                }, 3000);
+            } finally {
+                // Hide loading indicator
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('submitBtn').disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
